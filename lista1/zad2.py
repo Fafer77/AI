@@ -4,7 +4,7 @@ def is_word(candidate: str, words: set[str]) -> bool:
     return candidate in words
 
 
-def read_set_words(filename: str = 'polish_words.txt') -> set[str]:
+def read_set_words(filename: str = 'lista1/polish_words.txt') -> set[str]:
     words = set()
     with open(filename, "r", encoding='utf-8') as f:
         lines = f.readlines()
@@ -53,8 +53,8 @@ def seperate_text(words_set: set[str], filename: str = 'zad2_input.txt'):
 
 if __name__ == '__main__':
     words_set = read_set_words()
-    result = seperate_text(words_set, 'zad2_input.txt')
-    file = open('zad2_output.txt', 'w', encoding='utf-8')
+    result = seperate_text(words_set, 'lista1/pan_tadeusz_bez_spacji.txt')
+    file = open('pan_tadeusz_max_squares.txt', 'w', encoding='utf-8')
     for words in result:
         file.write(" ".join(words))
         file.write('\n')
