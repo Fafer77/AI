@@ -1,0 +1,26 @@
+Jak by miał działać preprocessing?
+Dla kazdej pozycji w liscie tak dlugo jak da sie w niej isc do gory to idziemy a potem w lewo dopoki nie napotkamy sciane
+Jak wtedy trackowac zmniejszenie ilosci stanow? -> zbior ktory bedzie mial te pozycje,
+czyli potrzebujemy set do ktorego bedziemy dodawac kolejno po transformacji kazda pozycje (bede unikalne z racji set)
+
+#BFS
+sprawdzic czy jest to stan finishujacy
+
+frozenstate -> typ ktory jest immutable i kolejnosc nie ma znaczenia w porownywaniu 
+
+UUUUUUULLLLLLLLLLLLLLLLLLLLDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRUUUU
+UUUUUUUUULLLLLLLLLLLLLLLLLLLLDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRDRURRRRRRRRULLLLULLLLLLUULURRRUL
+
+
+
+zad 3
+Plan:
+Preprocessing na heure z kazdego pola manhattan
+
+Musze  trzymac zmienna path w kolejce bo to bedzie realny koszt dojscia do danego wierzcholka + 1 (krok do niego) + heura na nim
+
+
+
+f(n) = len(path) + 1 + h(kratka do ktorej idziemy)
+to robimy dla kadzego punktu w naszym obecnym stanie i sumujemy te kilka f(n) = suma po czym 
+do kolejki dodajemy to w postaci (stan punktow w labiryncie, suma, )

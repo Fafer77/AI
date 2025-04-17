@@ -1,0 +1,41 @@
+Constraints list:
+1) full - check whether specification adds up to full length of nonogram including white spaces between them (all pixels are ready in this line)
+2) overlap
+3) advanced overlap - take two extremes and if there are cells which belong to the same block in every generation then there is overlap
+4) joining
+
+game plan:
+wszystkie mozliwosci wygenerowane dla kazdej specyfiukacji a potem sukcesywne wykreslanie z niej jesli mamy cos pewnego
+
+Odpowiedz wtedy gdy w domain nie ma juz krotek
+
+5 5
+5
+1 1 1
+3
+2 2
+5
+2 2
+1 3
+3 1
+1 3
+2 2
+
+dodac kazda specyfikacje wiersza i kolumny do 
+
+plan na overlap:
+kolejka do ktorej dodaje krotki (indeks, 'C' lub 'R')
+Biore krotke z kolejki, pobieram jej specyfikacje i:
+1) przechodze przez jej wszystkie mozliwosci i jesli dla jakiegos
+piksela jest wartosc spoza dziedziny to wykreslam to rozwiazanie
+2) Teraz szukam overlapa: przechodze przez wszystkie mozliwosci ktore pozostaly dla danej specyfikacji i szukam pewnych bitow, jesli taki pewny bit jest to modyfikuje jego dziedzine domain. Jesli taki bit zostal znaleziony to trafia spowrotem do kolejki dla pozycji (i, j) jesli przerabialismy wiersz to kolumna j (j, 'C') a jesli robilismy kolumne to trafia wiersz (i, 'R')
+
+for i in range(n):
+        for j in range(m):
+            if domain[i][j] != ('0', '1'):
+                if all(domain[])
+
+
+backtrack solution:
+iteruje przez cale domain szukajac pola ktore ma (0, 1)
+Jesli takie jest to wtedy sztucznie podstawiam tam 0 lub 1 i wywoluje czy dla danej specyfikacji kolumny i wiersza robimy revise_col i revise_row a potem overlap i jesli 
