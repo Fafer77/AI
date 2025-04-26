@@ -1,0 +1,8 @@
+Zasady burz:
+- ile jest pól burzowych w wierszach i kolumnach (mamy)
+- burza są prostokątne
+- mają chociaż rozmiar 2 x 2
+- nie stykają sie rogami
+
+Constraints list:
+1) 
