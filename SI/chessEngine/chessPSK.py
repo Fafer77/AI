@@ -13,6 +13,16 @@ import random
 in python chess white color = 1
 '''
 
+DEFAULT_PARAMS = {
+    "mobility_weight":         0.1,
+    "center_control_weight":   0.2,
+    "doubled_pawn_penalty":     0.5,
+    "isolated_pawn_penalty":    0.7,
+    "backward_pawn_bonus":      0.2,
+    "bishop_pair_bonus":        0.5,
+    "rook_open_file_bonus":     0.3,
+}
+
 class ZobristEntry(Enum):
     EXACT = 0
     LOWERBOUND = 1
@@ -21,18 +31,28 @@ class ZobristEntry(Enum):
 
 class chessPSK:
     def __init__(self, bin_path='bjbraams.bin', tb_path = './3-4-5_pieces_Syzygy/3-4-5'):
-        self.book = chess.polyglot.open_reader(bin_path)
+        try:
+            self.book = chess.polyglot.open_reader(bin_path)
+        except FileNotFoundError:
+            self.book = None
         self.board = chess.Board()
-        self.tablebase = chess.syzygy.open_tablebase(tb_path)
+        try:
+            self.tablebase = chess.syzygy.open_tablebase(tb_path)
+        except FileNotFoundError:
+            self.tablebase = None
         self.tt = {} # zobrist key hash trasnposition table
         self.max_depth = 64
         self.killer_moves = {d: [] for d in range(self.max_depth)}
         self.history = [[0] * 64 for _ in range(64)]
         self.VALUES = { PAWN: 1, KNIGHT: 3, BISHOP: 3, ROOK: 5, QUEEN: 9, KING: 0}
+        self.PARAMS = DEFAULT_PARAMS
 
     def get_book_move(self, board):
+        if self.book is None:
+            return None
         entry = self.book.weighted_choice(board)
         return entry.move if entry else None
+    
 
     def close_book(self):
         self.book.close()
@@ -44,7 +64,7 @@ class chessPSK:
         return len(self.board.piece_map())
 
     def get_syzygy_move(self):
-        if self.count_pieces() > 5:
+        if self.tablebase is None or self.count_pieces() > 5:
             return None
         
         best_move = None
@@ -84,6 +104,9 @@ class chessPSK:
           – wdl < 0 → porażka → minus duży bonus plus dtz (opóźnij porażkę)
           – wdl == 0 lub None → remis lub brak TB → 0
         """
+        if self.tablebase is None or self.count_pieces() > 5:
+            return 0
+
         wdl = self.tablebase.probe_wdl(self.board)
         dtz = self.tablebase.probe_dtz(self.board) or 0
 
@@ -222,11 +245,11 @@ class chessPSK:
         board.push(chess.Move.null())
         opponents_moves = len(list(board.legal_moves))
         board.pop()
-        score += 0.1 * (my_moves - opponents_moves)
+        score += self.PARAMS['mobility_weight'] * (my_moves - opponents_moves)
 
         # centre control
         for center in (chess.E4, chess.D4, chess.E5, chess.D5):
-            score += 0.2 * (len(board.attackers(WHITE, center))
+            score += self.PARAMS['center_control_weight'] * (len(board.attackers(WHITE, center))
                         - len(board.attackers(BLACK, center)))
         
         # pawn structure
@@ -237,25 +260,25 @@ class chessPSK:
             for f in set(files):
                 cnt = files.count(f)
                 if cnt > 1:
-                    score += dir_ * (-0.5 * (cnt - 1))
+                    score += dir_ * -self.PARAMS['doubled_pawn_penalty'] * (cnt - 1)
             
             for sq in pawns:
                 f = chess.square_file(sq)
                 # isolated
                 if f - 1 not in files and f + 1 not in files:
-                    score += dir_ * -0.7
+                    score += dir_ * -self.PARAMS['isolated_pawn_penalty']
                 opponent_pawns = board.pieces(PAWN, not color)
                 opponent_files = [chess.square_file(x) for x in opponent_pawns]
                 if all(x not in opponent_files for x in (f - 1, f, f + 1)):
                     rank = chess.square_rank(sq)
                     dist = (7 - rank) if color == WHITE else rank
-                    score += dir_ * (0.2 * dist)
+                    score += dir_ * (self.PARAMS['backward_pawn_bonus'] * dist)
         
         # bishop pair
         if len(board.pieces(BISHOP, WHITE)) >= 2:
-            score += 0.5
+            score += self.PARAMS['bishop_pair_bonus']
         if len(board.pieces(BISHOP, BLACK)) >= 2:
-            score -= 0.5
+            score -= self.PARAMS['bishop_pair_bonus']
         
         # rooks open and semi open lines
         for color in (WHITE, BLACK):
@@ -264,12 +287,15 @@ class chessPSK:
             for sq in board.pieces(ROOK, color):
                 f = chess.square_file(sq)
                 if f not in pawn_files:
-                    score += dir_ * 0.3
+                    score += dir_ * self.PARAMS["rook_open_file_bonus"]
                     
         return score
 
     def update(self, uci_move):
         move = chess.Move.from_uci(uci_move)
+        # print('Kolor: ', self.board.turn)
+        # print('Legalne ruchy to: ')
+        # print(self.board.legal_moves)
         if move not in self.board.legal_moves:
             raise ValueError(f'Illegal move: {uci_move}')
         self.board.push(move)
@@ -277,7 +303,8 @@ class chessPSK:
     def moves(self):
         return [m.uci() for m in self.board.legal_moves]
 
-    def search(self, move_time=0.03):
+    def search(self, move_time=0.1):
+        move_time = max(0.01, move_time)
         try:
             m = self.get_book_move(self.board)
         except IndexError:
@@ -294,7 +321,8 @@ class chessPSK:
 
     def iterative_deepening(self, move_time, max_depth=12):
         start = time.time()
-        best_move = None
+        moves = list(self.board.legal_moves)
+        best_move = moves[0]
         INF = float('inf')
         NEG_INF = float('-inf')
         maximizing = self.board.turn
@@ -358,87 +386,78 @@ class chessPSK:
     def alpha_beta_search(self, depth, alpha, beta, maximizing, start, move_time):
         if time.time() - start >= move_time:
             raise TimeoutError
-        
-        # check whether this was searched previously
+
         key = self.board._transposition_key()
-        tt_hit = self.probe_tt(key, depth, alpha, beta)
-        if tt_hit is not None:
-            return tt_hit
+        hit = self.probe_tt(key, depth, alpha, beta)
+        if hit is not None:
+            return hit
 
         if self.board.is_game_over():
             outcome = self.board.outcome()
             if outcome.winner is None:
                 return 0, None
-            return (float('inf'), None) if outcome.winner else (float('-inf'), None)
+            return (float('inf'), None) if outcome.winner else (-float('inf'), None)
 
         if depth == 0:
-            # we check if we can use syzygy
             if self.count_pieces() <= 5:
                 return self.probe_tb_score(), None
             return self.evaluate(), None
 
         best_move = None
-        alpha_orig = alpha
-        beta_orig = beta
+        alpha_orig, beta_orig = alpha, beta
 
         if maximizing:
-            max_score = float('-inf')
+            best_val = float('-inf')
             for mv in self.order_moves(depth):
                 self.board.push(mv)
-                score, move = self.alpha_beta_search(depth - 1, alpha, beta, False, start, move_time)
-                self.board.pop()
+                try:
+                    val, _ = self.alpha_beta_search(depth - 1, alpha, beta, False, start, move_time)
+                finally:
+                    self.board.pop()
 
-                if score > max_score:
-                    best_move = mv
-                    max_score = score
-                alpha = max(alpha, score)
+                if val > best_val:
+                    best_val, best_move = val, mv
+                alpha = max(alpha, val)
                 if beta <= alpha:
-                    killer_list = self.killer_moves[depth]
-                    if mv not in killer_list:
-                        killer_list.append(mv)
-                        if len(killer_list) > 2:
-                            killer_list.pop(0)
+                    k = self.killer_moves[depth]
+                    if mv not in k:
+                        k.append(mv)
+                        if len(k) > 2:
+                            k.pop(0)
                     if not self.board.is_capture(mv):
-                        f, t = mv.from_square, mv.to_square
-                        self.history[f][t] += depth**2
+                        self.history[mv.from_square][mv.to_square] += depth ** 2
                     break
-
-            value = max_score
         else:
-            min_score = float('inf')
+            best_val = float('inf')
             for mv in self.order_moves(depth):
                 self.board.push(mv)
-                score, move = self.alpha_beta_search(depth - 1, alpha, beta, True, start, move_time)
-                self.board.pop()
+                try:
+                    val, _ = self.alpha_beta_search(depth - 1, alpha, beta, True, start, move_time)
+                finally:
+                    self.board.pop()
 
-                if score < min_score:
-                    best_move = mv
-                    min_score = score
-                beta = min(beta, score)
+                if val < best_val:
+                    best_val, best_move = val, mv
+                beta = min(beta, val)
                 if beta <= alpha:
-                    killer_list = self.killer_moves[depth]
-                    if mv not in killer_list:
-                        killer_list.append(mv)
-                        if len(killer_list) > 2:
-                            killer_list.pop(0)
+                    k = self.killer_moves[depth]
+                    if mv not in k:
+                        k.append(mv)
+                        if len(k) > 2:
+                            k.pop(0)
                     if not self.board.is_capture(mv):
-                        f, t = mv.from_square, mv.to_square
-                        self.history[f][t] += depth**2
+                        self.history[mv.from_square][mv.to_square] += depth ** 2
                     break
 
-            value = min_score
-
-        if value <= alpha_orig:
+        if best_val <= alpha_orig:
             flag = ZobristEntry.UPPERBOUND
-        elif value >= beta_orig:
+        elif best_val >= beta_orig:
             flag = ZobristEntry.LOWERBOUND
         else:
             flag = ZobristEntry.EXACT
-        
-        key = self.board._transposition_key()
-        self.store_tt(key, depth, value, flag, best_move)
 
-        return value, best_move
+        self.store_tt(key, depth, best_val, flag, best_move)
+        return best_val, best_move
 
 class Player(object):
     def __init__(self):
@@ -463,11 +482,10 @@ class Player(object):
             cmd, args = self.hear()
 
             if cmd == 'HEDID':
-                # przeciwnik wykonał ruch
                 self.game.update(args[2])
-                # tutaj już nie robimy `continue`
+                # print("wykonalem update, stna planszy to")
+                # self.game.draw()
             elif cmd == 'UGO':
-                # pierwsze wezwanie – też idziemy do wspólnego kodu
                 pass
             elif cmd == 'ONEMORE':
                 self.reset()
@@ -479,11 +497,15 @@ class Player(object):
                 raise RuntimeError(f"Nieoczekiwana komenda: {cmd}")
 
             # obie ścieżki (HEDID i UGO) trafiają tu:
-            move_time = float(args[0]) - 0.1    # <-- tu wyciągasz limit czasu
-            move = self.game.search(move_time=move_time)
+            move_time = float(args[0]) - 0.02   # <-- tu wyciągasz limit czasu
+            move = self.game.search(move_time=1.0)
             # aktualizujesz stan i odsyłasz ruch
+            # print(f'TERAZ RUCH: {self.game.board.turn}')
             self.game.update(move.uci())
+            # print(f'Wykonalem ruch {move}')
+            # self.game.draw()
             self.say('IDO ' + move.uci())
+            # self.game.draw()
 
 if __name__ == '__main__':
     player = Player()

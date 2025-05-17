@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python3 beth_harmon.py
+python3 Chess/beth_harmon.py
