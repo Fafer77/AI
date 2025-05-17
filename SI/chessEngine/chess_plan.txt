@@ -1,0 +1,30 @@
+Białe: K, Q:9, H:3, R:5, B:3, P:1
+Czarne: k, q, h, r, b, p
+Co użyć?
+- transposition table korzystając z zobrist keys,
+liczymy zobrist keys za pomocą funkcji
+- Co mi daje biblioteka chess?
+a) is_checkmate()
+b) reprezentacja planszy za pomoca bitboardow
+
+- heurystyka
+- iterative deepening w ktorym wywoluje alphabeta search
+
+
+Lista heurystyk:
+1. Ilosc materialu
+2. piece - square tables - dla kazdej figury jest tablicya 8x8 ktora przypisaje bonus/kare za bycie na danym polu.
+3. liczba legalnych ruchów len(board.legal_moves) - przeciwnika liczba legalnych ruchow
+4. premia za posiadanie figur w centrum (pola e4,d4,e5,d5)
+5. Pawn structure - 
+a) double pawn - kara za piony w tej samej kolumnie
+b) isolated pawn - kara za izolowane piony
+c) chain pawn - bonus za strukture ze piony sie bronia
+d) bonus za piony bez przeciwnika przed soba na tej i sasiednich kolumnach
+6. King safety
+a) bonus za roszade
+b) kara za brak pionow przed krolem i otwarta linie ataku
+c) rosnaca kara im wiecej figur przeciwnika atakuje okolice krola
+7.bishop pair
+8. bonus gdy wieza jest na otwartej/polotwarej kolumnie bez pionkow tego samego koloru
+9. maly bonus za atakowany cel hetman/wieza lub za free piona

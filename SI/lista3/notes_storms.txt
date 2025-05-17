@@ -5,4 +5,16 @@ Zasady burz:
 - nie stykają sie rogami
 
 Constraints list:
-1) 
+1) jak mamy jakies pokolorowane pola to w pionie i poziomie musi miec chociaz jednego sasiada (spelnia wtedy 2x2)
+2) suma 1 w cols i rows musi byc rowna specyfikacji
+w SWI PROLOG dla rows: sum([B_i_0, B_i_1, ..., B_i_n], #=, row)
+3) brak styku rogami -> mamy kwadrat a b c d 
+i teraz musi zachodzic 
+(i) a + d + 1 >= c + b 
+(ii) b + c + 1 >= a + d
+SWI PROLOG:
+ad. (i) -> a + d + 1 #=> c + b,
+ad. (ii) -> b + c + 1 #=> a + d 
+
+4) nie może być w kształcie L -> mamy kwadrat a b c d
+i nie może być tak że suma ich jest rowna 3

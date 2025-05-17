@@ -1,0 +1,20 @@
+Plan:
+- maksymalna liczba ruchów to 60 (nie licząc tych gdzie nie można się ruszyć)
+- heurystyka:
+a) liczba pionków białe - czarne
+b) liczba legalnych ruchów
+c) liczba pionków bezpiecznych -> te w kornerach + jeśli już mamy w kornerze to licząca
+   dołączenia do tego rogu w pionie i poziomie, bo ich już sie nie da zamienic
+    Wagi będą liczone na podstawie fazy gry, będą jakieś 4 fazy gry, które będą nadawały różne Wagi
+    różnym elementom heurystyki
+- iterative deepening który będzie działał do głebokości nieskończonej
+lub do osiągnięcia limitu czasowego (np. 2s). Będzie w nim wywoływany
+alpha beta pruning i jeśli lepszy zwróci ruch to będziemy go zapamiętywać
+
+Co potrzebuję?
+-> funkcja do liczenia ilości legalncyh ruchów (zwraca tablicę), jeśli tablica pusta
+    wtedy omijamy kolejkę
+-> funkcja tworzenia nowego stanu na bazie danego ruchu
+-> zmienna licząca pozostała liczbę ruchów, tak aby gdy będzie 0 to koniec gry
+-> zmienna która trzyma ile z rzędu było skip kolejek, jeśli jest to = 2 wtedy koniec
+-> funckja licząca heurystykę
