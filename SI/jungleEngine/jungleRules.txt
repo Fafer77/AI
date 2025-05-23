@@ -1,0 +1,50 @@
+Zasady:
+- gracz nie może wejść do własnej jamy
+- szczur moze tylko do wody
+- ruch o jedno pole w lewo prawo gora dol
+- tygrys i lew moga skakac przez stawy (leca pole dalej
+za kierunek stawu), nie wolno skakać nad szczurem
+- Można bić bierkę o rónwje sile lub słabszą,
+nie można mieć dwóch bierek na tym samym polu,
+szczur jest silniejszy od słonia, a tak to siła względem
+starszeństaw
+- szczur nie może bić z pola jeziora
+- cel to wejście bierki do jamy przeciwnika -> win
+- w pułapce bierka traci swoją siłe i może być zbita
+przez dowolną bierkę
+
+funkcje potrzebne:
+1. make_mask - do tworzenia maski dla symboli
+2. is_white_piece - sprawdza czy na polu jest biała bierka,
+analogiczne is_black_piece - sprawdza czy jest bierka czarna
+3. set_piece - wstawia odpowiednia figure odpowiedniego koloru
+na odpowiednie miejsce
+4. remove_piece - usuwa dana figure odpowiedniegk oloru z
+danego miejsca
+5. generate_moves - przyjmuje jako argument kolor, figure,
+i na podstawie tego bada jej mozliwe ruchy. Specjalne case'y:
+a) szczur bije slonia
+b) szczur nie bije z wody
+c) kogos stojacego w pulapce mozna zbic kimkolwiek
+d) dla tygrysa i lwa jesli jest obok nich jezioro to moga
+je przeskoczyc
+6. is_terminal_state - patrzy czy stan jest koncowy
+7. apply_move - stosuje dany ruch na planszy
+
+generate_moves:
+1. musi na plansze trafic
+2. nie moze wejsc do swojej jamy
+3. tygrys / lew moga skoczyc przez wode jesli
+nie ma tam szczura i jest za jeziorem przeciwnik
+ktore moze pokonac lub nikogo nie ma
+4. ruch normalny - szczur wszedzie, ale inne nie moga do rzeki
+5. kolizja z wlasna bierka
+6. pole na ktorym jest bierka rywala
+
+Funkcja symulacji co potrzebne:
+- klonowanie, żeby miec sie na czym zaglebiac i symulowac ruchy
+- funkcja do stanu terminalnego i zwyciezcy
+- funkcja sterujaca cala symulacja
+- najlepszy ruch, zliczanie W/L
+- dany limit krokow N
+

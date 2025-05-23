@@ -146,6 +146,9 @@ class chessPSK:
         self.tt[key] = (depth, score, flag, move)
 
     def evaluate(self):
+        ENDGAME_THRESHOLD = 15
+        is_endgame = (self.count_pieces() <= ENDGAME_THRESHOLD)
+
         PST_PAWN = [
             0,   0,   0,   0,   0,   0,   0,   0,
             5,  10,  10, -20, -20,  10,  10,   5,
@@ -209,19 +212,32 @@ class chessPSK:
         -20, -30, -30, -40, -40, -30, -30, -20,
         -10, -20, -20, -20, -20, -20, -20, -10,
             20,  20,   0,   0,   0,   0,  20,  20,
-            20,  30,  10,   0,   0,  10,  30,  20,
+            10,  30,  20,   0,   0,  20,  30,  10,
         ]
+
+        PST_KING_EG   = [
+        -50, -40, -30, -20, -20, -30, -40, -50,
+        -30, -20, -10,   0,   0, -10, -20, -30,
+        -30, -10,  20,  30,  30,  20, -10, -30,
+        -30, -10,  30,  40,  40,  30, -10, -30,
+        -30, -10,  30,  40,  40,  30, -10, -30,
+        -30, -10,  20,  30,  30,  20, -10, -30,
+        -30, -30,   0,   0,   0,   0, -30, -30,
+        -50, -30, -30, -30, -30, -30, -30, -50,
+        ]
+
 
         board = self.board
         score = 0
         VALUES = self.VALUES
+        pst_king = PST_KING_EG if is_endgame else PST_KING
 
         # material + piece-square table
         for sq, piece in board.piece_map().items():
             val = VALUES[piece.piece_type]
             color = 1 if piece.color == WHITE else -1
 
-            score += color * val
+            score += color * val * 5
             idx = sq if piece.color == WHITE else chess.square_mirror(sq)
             if piece.piece_type == PAWN: 
                 pst = PST_PAWN
@@ -234,11 +250,11 @@ class chessPSK:
             elif piece.piece_type == QUEEN:
                 pst = PST_QUEEN
             elif piece.piece_type == KING:
-                pst = PST_KING
+                pst = pst_king
             else:
                 continue
         
-            score += color * pst[idx]
+            score += color * 0.3 * pst[idx]
 
         # legal_moves white - legal_moves black
         my_moves = len(list(board.legal_moves))
@@ -302,6 +318,33 @@ class chessPSK:
     
     def moves(self):
         return [m.uci() for m in self.board.legal_moves]
+
+    # def quiescence(self, alpha, beta):
+    #     # „stand‐pat” to ocena bez dalszych bici
+    #     stand_pat = self.evaluate() + self.probe_tb_score()
+    #     if stand_pat >= beta:
+    #         return beta
+    #     if stand_pat > alpha:
+    #         alpha = stand_pat
+
+    #     # przeszukujemy tylko bicie, promocje i ruchy dające szach
+    #     for move in self.board.legal_moves:
+    #         is_capture = self.board.is_capture(move)
+    #         is_promotion = move.promotion is not None
+    #         gives_check = self.board.gives_check(move)
+    #         if not (is_capture or is_promotion or gives_check):
+    #             continue
+
+    #         self.board.push(move)
+    #         score = -self.quiescence(-beta, -alpha)
+    #         self.board.pop()
+
+    #         if score >= beta:
+    #             return beta
+    #         if score > alpha:
+    #             alpha = score
+
+    #     return alpha
 
     def search(self, move_time=0.1):
         move_time = max(0.01, move_time)
@@ -498,7 +541,7 @@ class Player(object):
 
             # obie ścieżki (HEDID i UGO) trafiają tu:
             move_time = float(args[0]) - 0.02   # <-- tu wyciągasz limit czasu
-            move = self.game.search(move_time=1.0)
+            move = self.game.search(move_time=1.5)
             # aktualizujesz stan i odsyłasz ruch
             # print(f'TERAZ RUCH: {self.game.board.turn}')
             self.game.update(move.uci())
